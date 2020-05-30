@@ -49,8 +49,7 @@ function getExifDate($path) {
 
 # 詳細プロパティから日時文字列を生成する
 function getPropDate($folder, $file) {
-  $shell = New-Object -ComObject Shell.Application
-  $shellFolder = $shell.namespace($folder)
+  $shellFolder = $shellObject.namespace($folder)
   $shellFile = $shellFolder.parseName($file)
   $selectedPropertyNo = ""
   $selectedPropertyName = ""
@@ -89,6 +88,9 @@ function printSkipped($fname) {
 # メイン処理
 function main {
   Write-Host "== Media Dater v1.0 =="
+
+  # シェルオブジェクトを生成
+  $shellObject = New-Object -ComObject Shell.Application
 
   # ファイルリストを取得
   $targetFiles = Get-ChildItem -File | ForEach-Object { $_.Fullname }
@@ -145,6 +147,11 @@ function main {
 
     Write-Host "$fileName -> $newFileName ($dateStr)"
   }
+
+  # シェルオブジェクトを解放
+  [System.Runtime.InteropServices.Marshal]::ReleaseComObject($shellObject) | out-null
+  [System.GC]::Collect()
+  [System.GC]::WaitForPendingFinalizers()
 }
 
 # 実行
