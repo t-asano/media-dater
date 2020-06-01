@@ -4,8 +4,8 @@
 #
 # 動作環境:
 #   Windows PowerShell 5.1
-#   予めスクリプトの実行が許可されている(Set-ExecutionPolicy RemoteSigned)こと
-#   このスクリプトファイル(media_dater.ps1)がBOM付UTF-8であること
+#   ・このスクリプトの実行が許可されていること
+#   ・このスクリプトファイルがBOM付UTF-8であること
 #
 # 対応ファイル:
 #   拡張子がjpg/mov/mp4の画像/動画ファイル
@@ -80,6 +80,19 @@ function getPropDate($folder, $file) {
   return $ret
 }
 
+# ファイル名から日時文字列を生成する
+function getFnameDate($file) {
+  $ret = ""
+
+  if ($file -match "^([0-9]{4})([0-9]{2})([0-9]{2})\-([0-9]{2})([0-9]{2})([0-9]{2})") {
+    # "YYYYMMDD-HH:MM:SS*" -> "YYYY/MM/DD HH:MM:SS"
+    $ret = $Matches[1] + "/" + $Matches[2] + "/" + $Matches[3]
+    $ret = $ret + " " + $Matches[4] + ":" + $Matches[5] + ":" + $Matches[6]
+  }
+
+  return $ret
+}
+
 # ファイルスキップ時の表示
 function printSkipped($fname) {
   Write-Host "$fname (skipped)"
@@ -98,6 +111,7 @@ function main {
   # ファイル毎の処理
   foreach($targetFile in $targetFiles) {
     $dateStr = ""
+    $dateSource = ""
 
     # フォルダパス/ファイル名/拡張子を取得
     $folderPath = Split-Path $targetFile
@@ -106,9 +120,25 @@ function main {
 
     # 日付文字列を取得(YYYY/MM/DD HH:MM:SS)
     if ($fileName.ToLower().endsWith("jpg")) {
+      # Exifより取得
       $dateStr = getExifDate $targetFile
+      if (!$dateStr) {
+        # 失敗したらファイル名より取得
+        $dateStr = getFnameDate $fileName
+        $dateSource = "NAME"
+      } else {
+        $dateSource = "EXIF"
+      }
     } elseif ($fileName.ToLower().endsWith("mov") -or $fileName.ToLower().endsWith("mp4")) {
+      # 詳細プロパティより取得
       $dateStr = getPropDate $folderPath $fileName
+      if (!$dateStr) {
+        # 失敗したらファイル名より取得
+        $dateStr = getFnameDate $fileName
+        $dateSource = "NAME"
+      } else {
+        $dateSource = "META"
+      }
     }
     if (!$dateStr) {
       printSkipped $fileName
@@ -121,11 +151,16 @@ function main {
     $tempFileBase = $dateStr.replace("/", "").replace(" ", "-").replace(":", "")
     for ([int]$i = 0; $i -le 999; $i++)
     {
-      $tempPath = $folderPath + "\" + $tempFileBase + "-" + $i.ToString("000") + "." + $fileExt
+      $newPath = $folderPath + "\" + $tempFileBase + "-" + $i.ToString("000") + "." + $fileExt
+      $newFileName = Split-Path $newPath -Leaf
+      # 変更不要なら抜ける
+      if ($fileName -eq $newFileName) {
+        $renamed = $true
+        break
+      }
       # ファイル重複チェック
-      if ((Test-Path $tempPath) -eq $false)
+      if ((Test-Path $newPath) -eq $false)
       {
-        $newFileName = Split-Path $tempPath -Leaf
         try {
           Rename-Item $targetFile -newName $newFileName
         } catch {
@@ -145,7 +180,7 @@ function main {
     Set-ItemProperty $newFileName -Name CreationTime -Value $dateStr
     Set-ItemProperty $newFileName -Name LastWriteTime -Value $dateStr
 
-    Write-Host "$fileName -> $newFileName ($dateStr)"
+    Write-Host "$fileName -> $newFileName ($dateStr $dateSource)"
   }
 
   # シェルオブジェクトを解放
