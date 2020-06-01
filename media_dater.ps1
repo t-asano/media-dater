@@ -21,6 +21,7 @@
 #   https://qiita.com/kmr_hryk/items/882b4851e23cec607e70
 #
 Add-Type -AssemblyName System.Drawing
+$appVersion = "v1.0.1"
 
 # Exifから日時文字列を生成する
 function getExifDate($path) {
@@ -100,7 +101,7 @@ function printSkipped($fname) {
 
 # メイン処理
 function main {
-  Write-Host "== Media Dater v1.0 =="
+  Write-Host "== Media Dater $appVersion =="
 
   # シェルオブジェクトを生成
   $shellObject = New-Object -ComObject Shell.Application
