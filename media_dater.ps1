@@ -160,7 +160,7 @@ function main {
       $dateSource = "NAME"
     }
     if (!$dateStr) {
-      # それでも失敗したら
+      # それでも失敗したらスキップ
       printSkipped $fileName
       continue
     }
