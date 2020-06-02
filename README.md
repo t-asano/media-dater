@@ -2,9 +2,9 @@
 
 メタデータ内の撮影日時情報をもとにファイルの名前/作成日時/更新日時を変更するPowerShellスクリプト
 
-![result1](img/result1.png)
+![screen1](img/screen1.gif)
 
-![result2](img/result2.png)
+![screen2](img/screen2.png)
 
 ## 動作環境
 
