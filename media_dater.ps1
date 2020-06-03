@@ -138,7 +138,7 @@ function main {
     $fileExt = (Get-Item $targetFile).Extension.substring(1).ToLower()
 
     # 日付文字列を取得(YYYY/MM/DD HH:MM:SS)
-    if ($fileExt.endsWith("jpg")) {
+    if ($fileExt -eq "jpg") {
       # Exifより取得
       $dateStr = getExifDate $targetFile
       $dateSource = "EXIF"
