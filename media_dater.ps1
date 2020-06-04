@@ -112,7 +112,9 @@ function getFnameDate($file) {
 
 # ファイルスキップ時の表示
 function printSkipped($fname) {
-  Write-Host "$fname (skipped)"
+  Write-Host "$fname (" -NoNewline
+  Write-Host "skipped" -ForegroundColor Red -NoNewline
+  Write-Host ")"
 }
 
 # メイン処理
@@ -131,6 +133,7 @@ function main {
   foreach($targetFile in $targetFiles) {
     $dateStr = ""
     $dateSource = ""
+    $dateSourceColor = "" 
 
     # フォルダパス/ファイル名/拡張子を取得
     $folderPath = Split-Path $targetFile
@@ -142,12 +145,14 @@ function main {
       # Exifより取得
       $dateStr = getExifDate $targetFile
       $dateSource = "EXIF"
+      $dateSourceColor = "Green"
     } elseif (($fileExt -eq "mov") `
               -or ($fileExt -eq "mp4") `
               -or ($fileExt -eq "heic")) {
       # 詳細プロパティより取得
       $dateStr = getPropDate $folderPath $fileName
       $dateSource = "DETL"
+      $dateSourceColor = "Cyan"
     }
     if (!$dateStr -and `
         (($fileExt -eq "jpg") `
@@ -158,6 +163,7 @@ function main {
       # 失敗したらファイル名より取得
       $dateStr = getFnameDate $fileName
       $dateSource = "NAME"
+      $dateSourceColor = "Yellow"
     }
     if (!$dateStr) {
       # それでも失敗したらスキップ
@@ -203,7 +209,9 @@ function main {
       Set-ItemProperty $newFileName -Name LastWriteTime -Value $dateStr
     }
 
-    Write-Host "$fileName -> $newFileName ($dateStr $dateSource)"
+    Write-Host "$fileName -> $newFileName ($dateStr " -NoNewline
+    Write-Host "$dateSource" -ForegroundColor $dateSourceColor -NoNewline
+    Write-Host ")"
   }
 
   # シェルオブジェクトを解放
