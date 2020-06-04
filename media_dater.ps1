@@ -127,7 +127,7 @@ function main {
   $shellObject = New-Object -ComObject Shell.Application
 
   # ファイルリストを取得
-  $targetFiles = Get-ChildItem -File | ForEach-Object { $_.Fullname }
+  $targetFiles = Get-ChildItem -File -Recurse | ForEach-Object { $_.Fullname }
 
   # ファイル毎の処理
   foreach($targetFile in $targetFiles) {
@@ -205,11 +205,13 @@ function main {
 
     # 作成/更新日時を変更
     if (!$dryRun) {
-      Set-ItemProperty $newFileName -Name CreationTime -Value $dateStr
-      Set-ItemProperty $newFileName -Name LastWriteTime -Value $dateStr
+      Set-ItemProperty $newPath -Name CreationTime -Value $dateStr
+      Set-ItemProperty $newPath -Name LastWriteTime -Value $dateStr
     }
 
-    Write-Host "$fileName -> $newFileName ($dateStr " -NoNewline
+    # 結果表示
+    $rfPath = (Resolve-Path $folderPath -Relative).subString(2)
+    Write-Host "[$rfPath] $fileName -> $newFileName ($dateStr " -NoNewline
     Write-Host "$dateSource" -ForegroundColor $dateSourceColor -NoNewline
     Write-Host ")"
   }
