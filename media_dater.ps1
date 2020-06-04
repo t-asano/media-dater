@@ -35,7 +35,7 @@
 #   https://qiita.com/kmr_hryk/items/882b4851e23cec607e70
 #
 Add-Type -AssemblyName System.Drawing
-$appVersion = "v1.0.2"
+$appVersion = "v1.0.3"
 $dryRun = $false
 
 # Exifから日時文字列を生成する
