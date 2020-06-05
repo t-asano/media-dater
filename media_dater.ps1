@@ -111,8 +111,9 @@ function getFnameDate($file) {
 }
 
 # ファイルスキップ時の表示
-function printSkipped($fname) {
-  Write-Host "$fname (" -NoNewline
+function printSkipped($folder, $file) {
+  $rfPath = (Resolve-Path $folder -Relative).subString(2)
+  Write-Host "[$rfPath] $file (" -NoNewline
   Write-Host "skipped" -ForegroundColor Red -NoNewline
   Write-Host ")"
 }
@@ -167,7 +168,7 @@ function main {
     }
     if (!$dateStr) {
       # それでも失敗したらスキップ
-      printSkipped $fileName
+      printSkipped $folderPath $fileName
       continue
     }
 
@@ -199,7 +200,7 @@ function main {
       }
     }
     if (!$renamed) {
-      printSkipped $fileName
+      printSkipped $folderPath $fileName
       continue
     }
 
