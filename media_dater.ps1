@@ -112,7 +112,10 @@ function getFnameDate($file) {
 
 # ファイルスキップ時の表示
 function printSkipped($folder, $file) {
-  $rfPath = (Resolve-Path $folder -Relative).subString(2)
+  $rfPath = (Resolve-Path $folder -Relative)
+  if ($rfPath.StartsWith("..\")) {
+    $rfPath = ".\"
+  }
   Write-Host "[$rfPath] $file (" -NoNewline
   Write-Host "skipped" -ForegroundColor Red -NoNewline
   Write-Host ")"
@@ -211,7 +214,10 @@ function main {
     }
 
     # 結果表示
-    $rfPath = (Resolve-Path $folderPath -Relative).subString(2)
+    $rfPath = (Resolve-Path $folderPath -Relative)
+    if ($rfPath.StartsWith("..\")) {
+      $rfPath = ".\"
+    }
     Write-Host "[$rfPath] $fileName -> $newFileName ($dateStr " -NoNewline
     Write-Host "$dateSource" -ForegroundColor $dateSourceColor -NoNewline
     Write-Host ")"
