@@ -34,14 +34,12 @@
 #   https://qiita.com/Kosen-amai/items/52ec7e4e2f15f6a09bc3
 #   https://qiita.com/kmr_hryk/items/882b4851e23cec607e70
 #
-Param($mode)
-Add-Type -AssemblyName System.Drawing
-$appVersion = "v1.0.5"
+Param([switch]$d,[switch]$r)
+$dryRunEnabled = $d
+$recurseEnabled = $r
 
-$dryRun = $false
-if ($mode -eq "dry") {
-  $dryRun = $true
-}
+$appVersion = "v1.0.5"
+Add-Type -AssemblyName System.Drawing
 
 # Exifから日時文字列を生成する
 function getExifDate($path) {
@@ -129,14 +127,18 @@ function printSkipped($folder, $file) {
 # メイン処理
 function main {
   # バナーを表示
-  $mode = if ($dryRun) { " (dry run)" } else { "" }
+  $mode = if ($dryRunEnabled) { " (dry run)" } else { "" }
   Write-Host "== Media Dater $appVersion$mode =="
 
   # シェルオブジェクトを生成
   $shellObject = New-Object -ComObject Shell.Application
 
   # ファイルリストを取得
-  $targetFiles = Get-ChildItem -File -Recurse | ForEach-Object { $_.Fullname }
+  if ($recurseEnabled) {
+    $targetFiles = Get-ChildItem -File -Recurse | ForEach-Object { $_.Fullname }
+  } else {
+    $targetFiles = Get-ChildItem -File | ForEach-Object { $_.Fullname }
+  }
 
   # ファイル毎の処理
   foreach($targetFile in $targetFiles) {
@@ -184,27 +186,31 @@ function main {
     $renamed = $false
     $newFileName = ""
     $tempFileBase = $dateStr.replace("/", "").replace(" ", "-").replace(":", "")
-    for ([int]$i = 0; $i -le 999; $i++)
-    {
-      $newPath = $folderPath + "\" + $tempFileBase + "-" + $i.ToString("000") + "." + $fileExt
-      $newFileName = Split-Path $newPath -Leaf
-      # 変更不要なら抜ける
-      if ($fileName -eq $newFileName) {
+    if ($dryRunEnabled) {
+        $newPath = $folderPath + "\" + $tempFileBase + "-NNN" + "." + $fileExt
+        $newFileName = Split-Path $newPath -Leaf
         $renamed = $true
-        break
-      }
-      # ファイル重複チェック
-      if ((Test-Path $newPath) -eq $false)
+    } else {
+      for ([int]$i = 0; $i -le 999; $i++)
       {
-        if (!$dryRun) {
+        $newPath = $folderPath + "\" + $tempFileBase + "-" + $i.ToString("000") + "." + $fileExt
+        $newFileName = Split-Path $newPath -Leaf
+        # 変更不要なら抜ける
+        if ($fileName -eq $newFileName) {
+          $renamed = $true
+          break
+        }
+        # ファイル重複チェック
+        if ((Test-Path $newPath) -eq $false)
+        {
           try {
             Rename-Item $targetFile -newName $newFileName
           } catch {
             break
           }
+          $renamed = $true
+          break
         }
-        $renamed = $true
-        break
       }
     }
     if (!$renamed) {
@@ -213,7 +219,7 @@ function main {
     }
 
     # 作成/更新日時を変更
-    if (!$dryRun) {
+    if (!$dryRunEnabled) {
       Set-ItemProperty $newPath -Name CreationTime -Value $dateStr
       Set-ItemProperty $newPath -Name LastWriteTime -Value $dateStr
     }
