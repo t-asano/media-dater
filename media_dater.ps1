@@ -38,7 +38,7 @@ Param([switch]$d,[switch]$r)
 $dryRunEnabled = $d
 $recurseEnabled = $r
 
-$appVersion = "v1.0.5"
+$appVersion = "v1.0.6"
 Add-Type -AssemblyName System.Drawing
 
 # Exifから日時文字列を生成する
