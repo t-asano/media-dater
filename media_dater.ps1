@@ -74,6 +74,7 @@ function getPropDate($folder, $file) {
   $selectedPropertyName = ""
   $selectedPropertyValue = ""
 
+  # 撮影日時
   for ($i = 0; $i -lt 300; $i++) { # 208まで探せば十分?
     $propertyName = $shellFolder.getDetailsOf($Null, $i)
     if (($propertyName -eq "撮影日時") `
@@ -87,17 +88,38 @@ function getPropDate($folder, $file) {
       }
     }
   }
+  if ($selectedPropertyNo) {
+    # " YYYY/ MM/ DD   H:MM" -> "YYYY/MM/DD HH:MM:00"
+    $ret = $selectedPropertyValue
+    $time = "0" + $ret.substring(16) + ":00" # 秒は取得できないので00を設定
+    $time = $time.substring($time.length - 8, 8)
+    $ret = $ret.substring(1, 5) + $ret.substring(7, 3) + $ret.substring(11, 2) + " " + $time
+    return $ret
+  }
+  # 更新日時
+  for ($i = 0; $i -lt 300; $i++) { # 208まで探せば十分?
+    $propertyName = $shellFolder.getDetailsOf($Null, $i)
+    if ($propertyName -eq "更新日時") {
+      $propertyValue = $shellFolder.getDetailsOf($shellFile, $i)
+      if ($propertyValue) {
+        Write-Host "== $propertyValue =="
+        $selectedPropertyNo = $i
+        $selectedPropertyName = $propertyName
+        $selectedPropertyValue = $propertyValue
+        break
+      }
+    }
+  }
+  if ($selectedPropertyNo) {
+    # " YYYY/M/D H:M" -> "YYYY/MM/DD HH:MM:00"
+    $ret = $selectedPropertyValue
+    $dt = [datetime]::ParseExact($ret, "yyyy/MM/dd H:mm", $null)
+    $ret = $dt.ToString("yyyy/MM/dd HH:mm") + ":00"
+    return $ret
+  }
   if (!$selectedPropertyNo) {
     return ""
   }
-
-  # " YYYY/ MM/ DD   H:MM" -> "YYYY/MM/DD HH:MM:00"
-  $ret = $selectedPropertyValue
-  $time = "0" + $ret.substring(16) + ":00" # 秒は取得できないので00を設定
-  $time = $time.substring($time.length - 8, 8)
-  $ret = $ret.substring(1, 5) + $ret.substring(7, 3) + $ret.substring(11, 2) + " " + $time
-
-  return $ret
 }
 
 # ファイル名から日時文字列を生成する
@@ -157,27 +179,31 @@ function main {
       $dateStr = getExifDate $targetFile
       $dateSource = "EXIF"
       $dateSourceColor = "Green"
-    } elseif (($fileExt -eq "mov") `
-              -or ($fileExt -eq "mp4") `
-              -or ($fileExt -eq "heic")) {
-      # 詳細プロパティより取得
-      $dateStr = getPropDate $folderPath $fileName
-      $dateSource = "DETL"
-      $dateSourceColor = "Cyan"
     }
     if (!$dateStr -and `
         (($fileExt -eq "jpg") `
          -or ($fileExt -eq "mov") `
          -or ($fileExt -eq "mp4") `
          -or ($fileExt -eq "heic") `
-         -or ($fileExt -eq "png"))) {
+         -or ($fileExt -eq "png") `
+         -or ($fileExt -eq "m2ts"))) {
       # 失敗したらファイル名より取得
       $dateStr = getFnameDate $fileName
       $dateSource = "NAME"
       $dateSourceColor = "Yellow"
+      # 失敗したら詳細プロパティより取得
+      if (!$dateStr -and `
+          (($fileExt -eq "mov") `
+           -or ($fileExt -eq "mp4") `
+           -or ($fileExt -eq "heic"))) {
+        # 詳細プロパティより取得
+        $dateStr = getPropDate $folderPath $fileName
+        $dateSource = "DETL"
+        $dateSourceColor = "Cyan"
+      }
     }
     if (!$dateStr) {
-      # それでも失敗したらスキップ
+      # 失敗したらスキップ
       printSkipped $folderPath $fileName
       continue
     }
